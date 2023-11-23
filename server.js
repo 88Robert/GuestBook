@@ -2,6 +2,8 @@ let express = require("express");
 let app = express();
 let port = 8080;
 
+app.use(express.static('css'));
+
 let httpServer = app.listen(port, function () {
     console.log(`Webbservern körs på port ${port}`);
 });
@@ -47,6 +49,9 @@ app.post("/", function (req, res) {
     location.reload();
 });
 
+app.get("/loggin", function(req,res){
+    res.sendFile(__dirname + "/loggin.html")
+});
 
 
 
