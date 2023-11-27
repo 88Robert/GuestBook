@@ -53,13 +53,64 @@ app.get("/loggin", function(req,res){
     res.sendFile(__dirname + "/loggin.html")
 });
 
+let mysql = require("mysql");
+
+let con = mysql.createConnection({
+    hots: "localhost",
+    user: "root",
+    password: "",
+    database: "frontend23",
+});
+
+con.connect(function (err) {
+    if (err) throw err;
+    console.log("uppkopplad till databas!");
+    con.query("SELECT * FROM inlamning", function (err, result, fields) {
+    if (err) throw err;
+    console.log(result);        
+ /*    console.log(result[0]); */
+   /*  console.log(result[0].name);  */   
+    })
+});
+
+app.post("/loggin", function(request, response) {
+    let username = request.body.username;
+    let password = request.body.password;
+ 
+    if (username && password) {
+        con.query('SELECT * FROM inlamning WHERE username = ? AND password = ?', [username, password], function(error, results, fields) {   
+            if (error) throw error;
+            if (results.length > 0) {
+                response.redirect("/myForum");
+            } else {
+                response.send('Incorrect Username and/or Password!');
+            }			
+            response.end();
+        });
+    } else {
+        response.send('Please enter Username and Password!');
+        response.end();
+    }
+});
+
+
+app.get("/myForum", function(req, res){
+    res.sendFile(__dirname + "/forum.html")
+});
 
 
 
 
 
 
-/* et con = mysql.createConnection({
+
+
+
+
+
+
+
+/* let con = mysql.createConnection({
     host: "localhost", // IP-adress till databas-servern
     user: "root", // standard-användarnamn till XAMPPs databas
     password: "", // standardlösenord
