@@ -2,10 +2,10 @@ let express = require("express");
 let app = express();
 let port = 8080;
 
-app.use(express.static('css'));
+app.use(express.static("css"));
 
 let httpServer = app.listen(port, function () {
-    console.log(`Webbservern körs på port ${port}`);
+  console.log(`Webbservern körs på port ${port}`);
 });
 
 app.use(express.urlencoded({ extended: true }));
@@ -13,198 +13,127 @@ app.use(express.urlencoded({ extended: true }));
 let fs = require("fs");
 
 app.get("/form", function (req, res) {
-    res.sendFile(__dirname + "/index.html");
+  res.sendFile(__dirname + "/index.html");
 });
 
-app.get("/", function(req, res) {
-    let inlagg = JSON.parse(fs.readFileSync("inlagg.json").toString());
+app.get("/", function (req, res) {
+  let inlagg = JSON.parse(fs.readFileSync("inlagg.json").toString());
 
-    let output = "";
-    for (let i = 0; i < inlagg.length; i++) {
-        output += `<p><b>${inlagg[i].author}</b> från ${inlagg[i].from} skriver: <br> ${inlagg[i].message} </p>`;
-        }
-    let html = fs.readFileSync("index.html").toString();
-    html = html.replace("***GÄSTER***", output);
-    res.send(html);
+  let output = "";
+  for (let i = 0; i < inlagg.length; i++) {
+    output += `<p><b>${inlagg[i].author}</b> från ${inlagg[i].from} skriver: <br> ${inlagg[i].message} </p>`;
+  }
+  let html = fs.readFileSync("index.html").toString();
+  html = html.replace("***GÄSTER***", output);
+  res.send(html);
 });
 
 app.post("/", function (req, res) {
-    let inlagg = fs.readFileSync("inlagg.json").toString();
-    inlagg = JSON.parse(inlagg);
+  let inlagg = fs.readFileSync("inlagg.json").toString();
+  inlagg = JSON.parse(inlagg);
 
-    console.log(req.body);
-    inlagg.push(req.body);
+  console.log(req.body);
+  inlagg.push(req.body);
 
-    let jsonText = JSON.stringify(inlagg);
+  let jsonText = JSON.stringify(inlagg);
 
-    fs.writeFileSync("inlagg.json", jsonText);
+  fs.writeFileSync("inlagg.json", jsonText);
 
-    let output = "";
-    for (let i = 0; i < inlagg.length; i++) {
-      output += `<p><b>${inlagg[i].author}</b> från ${inlagg[i].from} skriver: <br> ${inlagg[i].message} </p>`;
-    }
-    let html = fs.readFileSync("index.html").toString();
-    html = html.replace("***GÄSTER***", output);
-    res.send(html);
-    location.reload();
+  let output = "";
+  for (let i = 0; i < inlagg.length; i++) {
+    output += `<p><b>${inlagg[i].author}</b> från ${inlagg[i].from} skriver: <br> ${inlagg[i].message} </p>`;
+  }
+  let html = fs.readFileSync("index.html").toString();
+  html = html.replace("***GÄSTER***", output);
+  res.send(html);
+  location.reload();
 });
 
-app.get("/loggin", function(req,res){
-    res.sendFile(__dirname + "/loggin.html")
+/* Till denna rad är det vanliga guestbook - delen som man 
+inte behöver logga in på. Använder endas JSON och inte databas. */
+
+app.get("/loggin", function (req, res) {
+  res.sendFile(__dirname + "/loggin.html");
 });
 
 let mysql = require("mysql");
 
 let con = mysql.createConnection({
-    hots: "localhost",
-    user: "root",
-    password: "",
-    database: "frontend23",
+  hots: "localhost",
+  user: "root",
+  password: "",
+  database: "frontend23",
+  multipleStatements: true,
 });
 
 con.connect(function (err) {
+  if (err) throw err;
+  console.log("uppkopplad till databas!");
+  con.query("SELECT * FROM inlamning", function (err, result, fields) {
     if (err) throw err;
-    console.log("uppkopplad till databas!");
-    con.query("SELECT * FROM inlamning", function (err, result, fields) {
+    /* console.log(result);     */
+    /*    console.log(result[0]); */
+    /*  console.log(result[0].name);  */
+  });
+});
+
+let cookieParser = require("cookie-parser");
+app.use(cookieParser());
+let session = require("express-session");
+let oneHour = 1000 * 60 * 60;
+app.use(
+  session({
+    secret: "HemligtokensomintekanavkodasXy6333%/&",
+    saveUninitialized: true,
+    cookie: { maxAge: oneHour },
+    resave: false,
+  })
+);
+
+app.post("/loggin", function (req, res) {
+  let username = req.body.username;
+  let password = req.body.password;
+  if (username && password) {
+    con.query(
+      "SELECT * FROM inlamning WHERE username = ? AND password = ?",
+      [username, password],
+      function (error, results, fields) {
+        if (error) throw error;
+        if (results.length > 0) {
+          session = req.session;
+          session.userID = req.body.username;
+          session.name = results[0].name;
+          res.redirect("/myForum");
+        } else {
+          res.send(`
+          <p>Felaktigt användarnamn eller lösenord!</p>
+          <p><a href='/loggin'>Tillbaka till inloggningssidan</a></p>`);
+        }
+      }
+    );
+  }
+});
+
+app.get("/myForum", function (req, res) {
+  //let session = req.session;
+  let name = req.session.name;
+  let html = fs.readFileSync("forum.html").toString();
+  html = html.replace("***NAME***", name);
+  res.send(html);
+  con.query("SELECT * FROM posts", function (err, result, fields) {
     if (err) throw err;
-    console.log(result);        
- /*    console.log(result[0]); */
-   /*  console.log(result[0].name);  */   
-    })
+    console.log(result);
+  });
 });
 
-app.post("/loggin", function(request, response) {
-    let username = request.body.username;
-    let password = request.body.password;
- 
-    if (username && password) {
-        con.query('SELECT * FROM inlamning WHERE username = ? AND password = ?', [username, password], function(error, results, fields) {   
-            if (error) throw error;
-            if (results.length > 0) {
-                response.redirect("/myForum");
-            } else {
-                response.send('Incorrect Username and/or Password!');
-            }			
-            response.end();
-        });
-    } else {
-        response.send('Please enter Username and Password!');
-        response.end();
-    }
+app.post("/myForum", function (req, res) {
+  con.connect(function (err) {
+    let sql = `INSERT INTO posts(topic, comment)
+      VALUES ('${req.body.topic}', '${req.body.comment}')`;
+    console.log(sql);
+    con.query(sql, function (err, result) {
+      if (err) console.log(err);
+      res.redirect("/myForum");
+    });
+  });
 });
-
-
-app.get("/myForum", function(req, res){
-    res.sendFile(__dirname + "/forum.html")
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* let con = mysql.createConnection({
-    host: "localhost", // IP-adress till databas-servern
-    user: "root", // standard-användarnamn till XAMPPs databas
-    password: "", // standardlösenord
-    database: "niklasforum", // ÄNDRA TILL NAMN PÅ DIN DATABAS
-  });
-  
-  app.use(session({
-      secret: 'secret',
-      resave: true,
-      saveUninitialized: true
-  }));
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
-  app.use(express.static(path.join(__dirname, 'static')));
-  
-  app.get('/', function(request, response) {
-      // Render login template
-      response.sendFile(path.join(__dirname + '/login.html'));
-  });
- */
-/* let con = mysql.createConnection({
-    host: "localhost", // IP-adress till databas-servern
-    user: "root", // standard-användarnamn till XAMPPs databas
-    password: "", // standardlösenord
-    database: "niklasforum", // ÄNDRA TILL NAMN PÅ DIN DATABAS
-  });
-  
-  app.use(session({
-      secret: 'secret',
-      resave: true,
-      saveUninitialized: true
-  }));
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
-  app.use(express.static(path.join(__dirname, 'static')));
-  
-  app.get('/', function(request, response) {
-      // Render login template
-      response.sendFile(path.join(__dirname + '/login.html'));
-  });
-  
-  
-  app.post('/checklogin', function(request, response) {
-      // Capture the input fields
-      let username = request.body.username;
-      let password = request.body.password;
-      // Ensure the input fields exists and are not empty
-      if (username && password) {
-          // Execute SQL query that'll select the account from the database based on the specified username and password
-          con.query('SELECT * FROM niklasforum WHERE username = ? AND password = ?', [username, password], function(error, results, fields) {
-              // If there is an issue with the query, output the error
-              if (error) throw error;
-              // If the account exists
-              if (results.length > 0) {
-                  // Authenticate the user
-                  request.session.loggedin = true;
-                  request.session.username = username;
-                  // Redirect to home page
-                  response.redirect('/main');
-              } else {
-                  response.send('Incorrect Username and/or Password!');
-              }			
-              response.end();
-          });
-      } else {
-          response.send('Please enter Username and Password!');
-          response.end();
-      }
-  });
-  
-  app.get('/login', function(request, response) {
-      // If the user is loggedin
-      if (request.session.loggedin) {
-          // Output username
-      response.send('Welcome back, ' + request.session.username + '!');
-      response.redirect('/main');
-      
-      
-    
-      } else {
-          // Not logged in
-          response.send('Please login to view this page!');
-      }
-      response.end();
-  });
-  
-  
-  
-  exports.logout = (req,res) => {
-    res.clearCookie('jwt');
-    res.redirect('/login');
-  };
- */
-
-
-
-

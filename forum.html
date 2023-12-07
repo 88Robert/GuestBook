@@ -1,40 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Forum</title>
-    <link rel="stylesheet" href="style.css"/>
-</head>
-<body>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
     <header>
-        <h1>Välkommen till Robbans Forum!</h1>
-        <div class="toForum">
-            <a href="/loggin">Logga Ut</a>
-        </div>
-        <hr />
-      </header>
-      <main>
-        <br>
-        <form action="/myForum" method="post">
-            <label>Namn</label>
-            <br>
-            <input required type="text" name = "author">
-            <br>
-            <br>
-            <label>Ort</label>
-            <br>
-            <input required type="text" name = "from">
-            <br>
-            <br>
-         
-            <label>Kommentar</label>
-            <br>
-            <textarea required name="message" id="" cols="30" rows="10"></textarea>
-            <br>
-            <br>
-            <input type="submit">
-        </form> 
-      </main>
-    </body>
+      <h1>Välkommen ***NAME*** till forumet!</h1>
+      <div class="toForum">
+        <a href="/loggin">Logga Ut</a>
+      </div>
+      <hr />
+    </header>
+    <main>
+      <br />
+      <form action="/myForum" method="post">
+        <label>Ämne</label>
+        <br />
+        <input type="text" required name="topic" type="topic" />
+        <br />
+        <br />
+        <label>Kommentar</label>
+        <br />
+        <textarea
+          required
+          name="comment"
+          type="comment"
+          id=""
+          cols="30"
+          rows="10"
+        ></textarea>
+        <br />
+        <br />
+        <input type="submit" />
+      </form>
+      <div class="Guests">
+        <h2>Posts</h2>
+        <b>***GÄSTER***</b>
+      </div>
+    </main>
+  </body>
 </html>
